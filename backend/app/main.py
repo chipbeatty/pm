@@ -1,14 +1,23 @@
 import os
+from typing import Any
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 
-from app.ai_service import AnthropicError, check_connectivity
+from app.ai_service import AnthropicError, check_connectivity, generate_board_response
 from app.board import BoardData
 from app.database import initialize_database
 from app.repository import get_board, replace_board
+
+
+class AIBoardRequest(BaseModel):
+    user_id: str
+    board: BoardData
+    message: str
+    history: list[dict[str, str]] | None = None
 
 
 def create_app(database_path: Path | None = None) -> FastAPI:
@@ -19,8 +28,9 @@ def create_app(database_path: Path | None = None) -> FastAPI:
             "http://localhost:3000",
             "http://127.0.0.1:3000",
         ],
-        allow_methods=["GET", "PUT"],
-        allow_headers=["Content-Type"],
+        allow_methods=["GET", "POST", "PUT", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization"],
+        allow_credentials=True,
     )
     resolved_database_path = database_path or Path(
         os.environ.get(
@@ -45,6 +55,23 @@ def create_app(database_path: Path | None = None) -> FastAPI:
             }
         except AnthropicError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    @app.post("/api/ai/board")
+    def ai_board(request: AIBoardRequest) -> dict[str, Any]:
+        try:
+            result = generate_board_response(request.board, request.message, request.history)
+            if request.user_id:
+                saved = replace_board(resolved_database_path, request.user_id, result["board"])
+                if saved is None:
+                    raise HTTPException(status_code=404, detail="User board not found.")
+                if saved is False:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Board ID does not match the user's board.",
+                    )
+            return result
+        except AnthropicError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/users/{user_id}/board", response_model=BoardData)
     def read_board(user_id: str) -> BoardData:

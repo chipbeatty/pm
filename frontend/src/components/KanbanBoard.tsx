@@ -11,10 +11,11 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { AIChatSidebar } from "@/components/AIChatSidebar";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
 import { SignInForm } from "@/components/SignInForm";
-import { getBoard, saveBoard } from "@/lib/api";
+import { getBoard, saveBoard, type ChatMessage } from "@/lib/api";
 import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
 
 const BOARD_USER_ID = "user-1";
@@ -26,11 +27,13 @@ export const KanbanBoard = () => {
   const updateQueue = useRef<Promise<void>>(Promise.resolve());
   const [saveError, setSaveError] = useState<string | null>(null);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
   const handleSignIn = async () => {
     const savedBoard = await getBoard(BOARD_USER_ID);
     boardRef.current = savedBoard;
     setBoard(savedBoard);
+    setChatMessages([]);
     setIsSignedIn(true);
   };
 
@@ -173,6 +176,7 @@ export const KanbanBoard = () => {
                 onClick={() => {
                   boardRef.current = initialData;
                   setBoard(initialData);
+                  setChatMessages([]);
                   setSaveError(null);
                   setIsSignedIn(false);
                 }}
@@ -201,34 +205,48 @@ export const KanbanBoard = () => {
           </p>
         )}
 
-        <DndContext
-          id="kanban-board"
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <section className="grid gap-6 lg:grid-cols-5">
-            {board.columns.map((column) => (
-              <KanbanColumn
-                key={column.id}
-                column={column}
-                cards={column.cardIds.map((cardId) => board.cards[cardId])}
-                onRename={handleRenameColumn}
-                onAddCard={handleAddCard}
-                onDeleteCard={handleDeleteCard}
-                onUpdateCard={handleUpdateCard}
-              />
-            ))}
-          </section>
-          <DragOverlay>
-            {activeCard ? (
-              <div className="w-[260px]">
-                <KanbanCardPreview card={activeCard} />
-              </div>
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <DndContext
+            id="kanban-board"
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <section className="grid gap-6 lg:grid-cols-5">
+              {board.columns.map((column) => (
+                <KanbanColumn
+                  key={column.id}
+                  column={column}
+                  cards={column.cardIds.map((cardId) => board.cards[cardId])}
+                  onRename={handleRenameColumn}
+                  onAddCard={handleAddCard}
+                  onDeleteCard={handleDeleteCard}
+                  onUpdateCard={handleUpdateCard}
+                />
+              ))}
+            </section>
+            <DragOverlay>
+              {activeCard ? (
+                <div className="w-[260px]">
+                  <KanbanCardPreview card={activeCard} />
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+
+          <AIChatSidebar
+            userId={BOARD_USER_ID}
+            board={board}
+            messages={chatMessages}
+            onMessagesChange={setChatMessages}
+            onBoardUpdate={(nextBoard) => {
+              const nextState = nextBoard as BoardData;
+              boardRef.current = nextState;
+              setBoard(nextState);
+            }}
+          />
+        </div>
       </main>
     </div>
   );

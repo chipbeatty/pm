@@ -7,7 +7,7 @@
 - Runtime: one Docker container for local use, with start and stop scripts for macOS, Windows, and Linux.
 - Data: SQLite, initialized when the database does not exist. The schema supports multiple users, with one board per user.
 - MVP sign-in: hardcoded username `user` and password `password`. Sign-in state is client-side and resets when the page is refreshed; it is a demo gate, not server-side authentication.
-- AI: Anthropic, using `claude-3-5-haiku-20241022`; keep the API key in the root `.env` and never expose it to the frontend.
+- AI: Anthropic, using `claude-haiku-5-5`; keep the API key in the root `.env` and never expose it to the frontend.
 - Board: a fixed set of columns whose names can be changed. Cards can be created, edited, deleted, reordered, and moved between columns.
 - AI chat can create, edit, and move cards when requested.
 
@@ -112,35 +112,48 @@
 
 ## Part 8: Anthropic connectivity
 
-- [ ] Read the Anthropic API key from the server-side root `.env` configuration.
-- [ ] Add a minimal backend AI service using `claude-3-5-haiku-20241022`.
-- [ ] Add a small connectivity check that asks the model a simple `2+2` question.
-- [ ] Keep the key and provider request on the backend; do not include secrets in frontend assets, responses, logs, or committed files.
+- [x] Read the Anthropic API key from the server-side root `.env` configuration.
+- [x] Add a minimal backend AI service using `claude-haiku-5-5`.
+- [x] Add a small connectivity check that asks the model a simple `2+2` question.
+- [x] Keep the key and provider request on the backend; do not include secrets in frontend assets, responses, logs, or committed files.
 
 **Tests:** Unit tests with a mocked provider for request construction and error handling; a manual live `2+2` check when a valid key and network access are available.
 
 **Success criteria:** With a valid key, the backend can make a live Anthropic request and receive the expected answer; missing keys and provider errors are reported clearly; the secret remains server-side.
 
+**Verification:** Mocked backend tests passed. A live request to `/api/ai/health` returned `{"status":"ok","model":"claude-haiku-5-5","answer":"4"}`.
+
 ## Part 9: Structured AI board operations
 
-- [ ] Send the current board, the user's question, and conversation history to the backend AI service.
-- [ ] Define and validate a structured response containing assistant text and an optional set of board changes.
-- [ ] Apply permitted create, edit, and move operations through the same persistence rules as manual API updates.
-- [ ] Return the assistant response and resulting board state to the frontend.
-- [ ] Handle malformed or rejected model output without applying partial or invalid board changes.
+- [x] Send the current board, the user's question, and conversation history to the backend AI service.
+- [x] Define and validate a structured response containing assistant text and an optional set of board changes.
+- [x] Apply permitted create, edit, and move operations through the same persistence rules as manual API updates.
+- [x] Return the assistant response and resulting board state to the frontend.
+- [x] Handle malformed or rejected model output without applying partial or invalid board changes.
 
 **Tests:** Unit tests using mocked model responses for text-only answers and each board operation; tests for invalid structured output, provider errors, and board-state validation; verify persisted results through the board API.
 
 **Success criteria:** The backend supplies board context and conversation history, validates structured output, and persists valid requested changes while leaving the board unchanged for invalid output.
 
+**Verification:** The focused AI service test file passed (9 tests). A live browser request created a card in an earlier test, and the backend returned HTTP 200.
+
 ## Part 10: AI chat sidebar
 
-- [ ] Add a sidebar chat interface to the board.
-- [ ] Send user messages and conversation history to the backend AI endpoint.
-- [ ] Display assistant replies and handle loading and request-error states.
-- [ ] Refresh or replace board state when the backend reports an AI-applied update.
-- [ ] Keep the sidebar usable alongside the board at supported viewport sizes.
+- [x] Add a sidebar chat interface to the board.
+- [x] Send user messages and conversation history to the backend AI endpoint.
+- [x] Display assistant replies and handle loading and request-error states.
+- [x] Refresh or replace board state when the backend reports an AI-applied update.
+- [x] Keep the sidebar usable alongside the board at supported viewport sizes.
 
 **Tests:** Frontend unit tests for chat rendering and backend interaction; Playwright tests for sending a message, displaying a response, reflecting an AI board update, and showing errors; run the full backend and frontend suites.
 
 **Success criteria:** The user can chat from the board, see the assistant response, and see valid AI board changes reflected without reloading. The full test suites pass, and the Dockerized app works end to end.
+
+**Verification:** A live browser chat request returned the expected assistant response without making board changes. The focused backend AI tests passed. Full frontend and Playwright suites have not been recorded as run for this integration.
+
+## Latest integration fix and runtime verification
+
+- Updated the Anthropic response parser to extract text from the content entries returned by the provider instead of assuming one exact content-block shape.
+- The parser fix was initially only in the working tree; the running Docker container still contained the previous code. Rebuilt and restarted the image with `docker compose up --build -d` to activate it.
+- Verified the rebuilt container contained the updated parser, the live connectivity route succeeded, and a live browser chat completed with HTTP 200.
+- Stopped the development container with `docker compose stop` at the user's request. Start it again with the project's start script or `docker compose up --build -d`.

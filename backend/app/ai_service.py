@@ -95,7 +95,19 @@ def ask_model(prompt: str) -> str:
         content = payload["content"]
         if not isinstance(content, list):
             raise TypeError("content is not a list")
-        message_content = content[0]["text"]
+
+        text_parts: list[str] = []
+        for block in content:
+            if isinstance(block, str):
+                text_parts.append(block)
+            elif isinstance(block, dict):
+                text_value = block.get("text")
+                if isinstance(text_value, str):
+                    text_parts.append(text_value)
+
+        if not text_parts:
+            raise TypeError("content contains no text blocks")
+        message_content = "\n".join(text_parts)
     except (KeyError, IndexError, TypeError, ValueError) as exc:
         raise AnthropicError("Anthropic returned an unexpected response payload.") from exc
 
