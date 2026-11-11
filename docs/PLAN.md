@@ -37,11 +37,11 @@
 
 ## Part 3: Serve the existing frontend
 
-- [ ] Configure the Next.js app for a static export compatible with FastAPI static-file serving.
-- [ ] Build and serve the frontend at `/`, retaining the current Kanban demo and styling.
-- [ ] Keep frontend assets and client-side routes working from the container.
-- [ ] Update the Docker build to produce and include the static frontend output.
-- [ ] Preserve the existing frontend unit and end-to-end tests, adapting only what the serving setup requires.
+- [x] Configure the Next.js app for a static export compatible with FastAPI static-file serving.
+- [x] Build and serve the frontend at `/`, retaining the current Kanban demo and styling.
+- [x] Keep frontend assets and client-side routes working from the container.
+- [x] Update the Docker build to produce and include the static frontend output.
+- [x] Preserve the existing frontend unit and end-to-end tests, adapting only what the serving setup requires.
 
 **Tests:** Frontend lint, unit tests, and Playwright tests; Docker build; container smoke test for `/`, static assets, and the example API route.
 
