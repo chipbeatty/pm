@@ -7,7 +7,7 @@
 - Runtime: one Docker container for local use, with start and stop scripts for macOS, Windows, and Linux.
 - Data: SQLite, initialized when the database does not exist. The schema supports multiple users, with one board per user.
 - MVP sign-in: hardcoded username `user` and password `password`. Sign-in state is client-side and resets when the page is refreshed; it is a demo gate, not server-side authentication.
-- AI: OpenRouter, using `openai/gpt-oss-120b`; keep the API key in the root `.env` and never expose it to the frontend.
+- AI: Anthropic, using `claude-3-5-haiku-20241022`; keep the API key in the root `.env` and never expose it to the frontend.
 - Board: a fixed set of columns whose names can be changed. Cards can be created, edited, deleted, reordered, and moved between columns.
 - AI chat can create, edit, and move cards when requested.
 
@@ -110,16 +110,16 @@
 
 **Success criteria:** The board is loaded from backend data after sign-in; manual updates are sent to the backend and reflected in the UI; persisted state is returned on reload; failed saves are visible and do not falsely appear successful.
 
-## Part 8: OpenRouter connectivity
+## Part 8: Anthropic connectivity
 
-- [ ] Read the OpenRouter API key from the server-side root `.env` configuration.
-- [ ] Add a minimal backend AI service using `openai/gpt-oss-120b`.
+- [ ] Read the Anthropic API key from the server-side root `.env` configuration.
+- [ ] Add a minimal backend AI service using `claude-3-5-haiku-20241022`.
 - [ ] Add a small connectivity check that asks the model a simple `2+2` question.
 - [ ] Keep the key and provider request on the backend; do not include secrets in frontend assets, responses, logs, or committed files.
 
 **Tests:** Unit tests with a mocked provider for request construction and error handling; a manual live `2+2` check when a valid key and network access are available.
 
-**Success criteria:** With a valid key, the backend can make a live OpenRouter request and receive the expected answer; missing keys and provider errors are reported clearly; the secret remains server-side.
+**Success criteria:** With a valid key, the backend can make a live Anthropic request and receive the expected answer; missing keys and provider errors are reported clearly; the secret remains server-side.
 
 ## Part 9: Structured AI board operations
 

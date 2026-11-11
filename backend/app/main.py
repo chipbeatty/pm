@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.ai_service import AnthropicError, check_connectivity
 from app.board import BoardData
 from app.database import initialize_database
 from app.repository import get_board, replace_board
@@ -32,6 +33,18 @@ def create_app(database_path: Path | None = None) -> FastAPI:
     @app.get("/api/hello")
     def hello() -> dict[str, str]:
         return {"message": "Hello from FastAPI!"}
+
+    @app.get("/api/ai/health")
+    def ai_health() -> dict[str, str]:
+        try:
+            result = check_connectivity()
+            return {
+                "status": "ok",
+                "model": result["model"],
+                "answer": result["answer"],
+            }
+        except AnthropicError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     @app.get("/api/users/{user_id}/board", response_model=BoardData)
     def read_board(user_id: str) -> BoardData:

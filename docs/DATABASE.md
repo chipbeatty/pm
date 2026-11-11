@@ -70,4 +70,4 @@ The user ID in the URL selects a board; it is not an authentication credential. 
 - Create the demo user (`user-1`, username `user`), one board, the five fixed columns, and the current sample cards when the initial board is first created. Do not reseed cards on subsequent starts, because a deleted card must stay deleted.
 - Store the SQLite file at `/data/kanban.sqlite3` inside the container.
 - Mount a named Docker volume at `/data` so data survives container restarts and image rebuilds. Removing the Compose volume (for example with `docker compose down -v`) deletes the local database.
-- Keep database files and credentials out of Git; do not put authentication or OpenRouter secrets in this schema.
+- Keep database files and credentials out of Git; do not put authentication or AI provider secrets in this schema.
