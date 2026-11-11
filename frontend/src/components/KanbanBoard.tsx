@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -14,12 +14,42 @@ import {
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
 import { SignInForm } from "@/components/SignInForm";
+import { getBoard, saveBoard } from "@/lib/api";
 import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
+
+const BOARD_USER_ID = "user-1";
 
 export const KanbanBoard = () => {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [board, setBoard] = useState<BoardData>(() => initialData);
+  const boardRef = useRef(board);
+  const updateQueue = useRef<Promise<void>>(Promise.resolve());
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+
+  const handleSignIn = async () => {
+    const savedBoard = await getBoard(BOARD_USER_ID);
+    boardRef.current = savedBoard;
+    setBoard(savedBoard);
+    setIsSignedIn(true);
+  };
+
+  const persistBoard = (update: (current: BoardData) => BoardData) => {
+    setSaveError(null);
+    updateQueue.current = updateQueue.current
+      .then(async () => {
+        const updatedBoard = update(boardRef.current);
+        const savedBoard = await saveBoard(BOARD_USER_ID, updatedBoard);
+        boardRef.current = savedBoard;
+        setBoard(savedBoard);
+      })
+      .catch((reason: unknown) => {
+        setSaveError(
+          reason instanceof Error ? reason.message : "Unable to save board."
+        );
+      });
+    return updateQueue.current;
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -41,14 +71,14 @@ export const KanbanBoard = () => {
       return;
     }
 
-    setBoard((prev) => ({
+    void persistBoard((prev) => ({
       ...prev,
       columns: moveCard(prev.columns, active.id as string, over.id as string),
     }));
   };
 
   const handleRenameColumn = (columnId: string, title: string) => {
-    setBoard((prev) => ({
+    void persistBoard((prev) => ({
       ...prev,
       columns: prev.columns.map((column) =>
         column.id === columnId ? { ...column, title } : column
@@ -58,7 +88,7 @@ export const KanbanBoard = () => {
 
   const handleAddCard = (columnId: string, title: string, details: string) => {
     const id = createId("card");
-    setBoard((prev) => ({
+    void persistBoard((prev) => ({
       ...prev,
       cards: {
         ...prev.cards,
@@ -73,8 +103,7 @@ export const KanbanBoard = () => {
   };
 
   const handleDeleteCard = (columnId: string, cardId: string) => {
-    setBoard((prev) => {
-      return {
+    void persistBoard((prev) => ({
         ...prev,
         cards: Object.fromEntries(
           Object.entries(prev.cards).filter(([id]) => id !== cardId)
@@ -87,14 +116,27 @@ export const KanbanBoard = () => {
               }
             : column
         ),
-      };
-    });
+      }));
+  };
+
+  const handleUpdateCard = (
+    cardId: string,
+    title: string,
+    details: string
+  ) => {
+    void persistBoard((prev) => ({
+      ...prev,
+      cards: {
+        ...prev.cards,
+        [cardId]: { ...prev.cards[cardId], title, details },
+      },
+    }));
   };
 
   const activeCard = activeCardId ? cardsById[activeCardId] : null;
 
   if (!isSignedIn) {
-    return <SignInForm onSignIn={() => setIsSignedIn(true)} />;
+    return <SignInForm onSignIn={handleSignIn} />;
   }
 
   return (
@@ -128,7 +170,12 @@ export const KanbanBoard = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setIsSignedIn(false)}
+                onClick={() => {
+                  boardRef.current = initialData;
+                  setBoard(initialData);
+                  setSaveError(null);
+                  setIsSignedIn(false);
+                }}
                 className="rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
               >
                 Sign out
@@ -148,6 +195,12 @@ export const KanbanBoard = () => {
           </div>
         </header>
 
+        {saveError && (
+          <p role="alert" className="text-sm font-medium text-red-700">
+            Board changes could not be saved: {saveError}
+          </p>
+        )}
+
         <DndContext
           id="kanban-board"
           sensors={sensors}
@@ -164,6 +217,7 @@ export const KanbanBoard = () => {
                 onRename={handleRenameColumn}
                 onAddCard={handleAddCard}
                 onDeleteCard={handleDeleteCard}
+                onUpdateCard={handleUpdateCard}
               />
             ))}
           </section>

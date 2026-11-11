@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 
 type SignInFormProps = {
-  onSignIn: () => void;
+  onSignIn: () => Promise<void>;
 };
 
 export const SignInForm = ({ onSignIn }: SignInFormProps) => {
@@ -11,7 +11,7 @@ export const SignInForm = ({ onSignIn }: SignInFormProps) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (username !== "user" || password !== "password") {
@@ -19,7 +19,14 @@ export const SignInForm = ({ onSignIn }: SignInFormProps) => {
       return;
     }
 
-    onSignIn();
+    setError("");
+    try {
+      await onSignIn();
+    } catch (reason) {
+      setError(
+        reason instanceof Error ? reason.message : "Unable to load your board."
+      );
+    }
   };
 
   return (

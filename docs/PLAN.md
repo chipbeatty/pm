@@ -82,11 +82,11 @@
 
 ## Part 7: Connect frontend to backend
 
-- [ ] Replace in-memory-only board changes with calls to the same-origin backend API.
-- [ ] Load the user's board after client-side demo sign-in and render persisted state.
-- [ ] Wire manual board actions to persist column renames and card create, edit, delete, and movement.
-- [ ] Show failures instead of silently presenting an unsaved change as successful.
-- [ ] Keep the single-origin Docker deployment and static frontend constraints intact.
+- [x] Replace in-memory-only board changes with calls to the same-origin backend API.
+- [x] Load the user's board after client-side demo sign-in and render persisted state.
+- [x] Wire manual board actions to persist column renames and card create, edit, delete, and movement.
+- [x] Show failures instead of silently presenting an unsaved change as successful.
+- [x] Keep the single-origin Docker deployment and static frontend constraints intact.
 
 **Tests:** Frontend unit tests for API interactions and error states; Playwright integration tests for board load and each manual update; backend regression tests.
 

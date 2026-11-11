@@ -1,3 +1,4 @@
+import { useState } from "react";
 import clsx from "clsx";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -11,6 +12,7 @@ type KanbanColumnProps = {
   onRename: (columnId: string, title: string) => void;
   onAddCard: (columnId: string, title: string, details: string) => void;
   onDeleteCard: (columnId: string, cardId: string) => void;
+  onUpdateCard: (cardId: string, title: string, details: string) => void;
 };
 
 export const KanbanColumn = ({
@@ -19,7 +21,9 @@ export const KanbanColumn = ({
   onRename,
   onAddCard,
   onDeleteCard,
+  onUpdateCard,
 }: KanbanColumnProps) => {
+  const [titleDraft, setTitleDraft] = useState<string | null>(null);
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
   return (
@@ -40,8 +44,22 @@ export const KanbanColumn = ({
             </span>
           </div>
           <input
-            value={column.title}
-            onChange={(event) => onRename(column.id, event.target.value)}
+            value={titleDraft ?? column.title}
+            onChange={(event) => setTitleDraft(event.target.value)}
+            onBlur={() => {
+              const trimmedTitle = (titleDraft ?? column.title).trim();
+              if (!trimmedTitle || trimmedTitle === column.title) {
+                setTitleDraft(null);
+                return;
+              }
+              onRename(column.id, trimmedTitle);
+              setTitleDraft(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.currentTarget.blur();
+              }
+            }}
             className="mt-3 w-full bg-transparent font-display text-lg font-semibold text-[var(--navy-dark)] outline-none"
             aria-label="Column title"
           />
@@ -54,6 +72,7 @@ export const KanbanColumn = ({
               key={card.id}
               card={card}
               onDelete={(cardId) => onDeleteCard(column.id, cardId)}
+              onUpdate={onUpdateCard}
             />
           ))}
         </SortableContext>

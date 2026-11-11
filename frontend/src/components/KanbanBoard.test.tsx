@@ -1,8 +1,30 @@
-import { render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, vi } from "vitest";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { initialData, type BoardData } from "@/lib/kanban";
 
 const getFirstColumn = () => screen.getAllByTestId(/column-/i)[0];
+
+beforeEach(() => {
+  let board: BoardData = structuredClone(initialData);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === "PUT") {
+        board = JSON.parse(init.body as string) as BoardData;
+      }
+      return new Response(JSON.stringify(board), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    })
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 const signIn = async () => {
   await userEvent.type(screen.getByLabelText("Username"), "user");
@@ -27,7 +49,16 @@ describe("KanbanBoard", () => {
     const input = within(column).getByLabelText("Column title");
     await userEvent.clear(input);
     await userEvent.type(input, "New Name");
-    expect(input).toHaveValue("New Name");
+    await userEvent.tab();
+    await waitFor(() => {
+      const putRequest = vi
+        .mocked(fetch)
+        .mock.calls.find(([, init]) => init?.method === "PUT");
+      expect(putRequest).toBeDefined();
+      expect(
+        JSON.parse(putRequest?.[1]?.body as string).columns[0].title
+      ).toBe("New Name");
+    });
   });
 
   it("adds and removes a card", async () => {
@@ -54,6 +85,59 @@ describe("KanbanBoard", () => {
     await userEvent.click(deleteButton);
 
     expect(within(column).queryByText("New card")).not.toBeInTheDocument();
+  });
+
+  it("edits a card and persists the complete board", async () => {
+    render(<KanbanBoard />);
+    await signIn();
+    const column = getFirstColumn();
+    await userEvent.click(
+      within(column).getByRole("button", { name: "Edit Align roadmap themes" })
+    );
+    const title = within(column).getByLabelText(
+      "Title for Align roadmap themes"
+    );
+    await userEvent.clear(title);
+    await userEvent.type(title, "Updated roadmap");
+    await userEvent.click(within(column).getByRole("button", { name: "Save" }));
+
+    expect(within(column).getByText("Updated roadmap")).toBeInTheDocument();
+    const putRequest = vi
+      .mocked(fetch)
+      .mock.calls.find(([, init]) => init?.method === "PUT");
+    expect(putRequest).toBeDefined();
+    expect(JSON.parse(putRequest?.[1]?.body as string).cards["card-1"].title).toBe(
+      "Updated roadmap"
+    );
+  });
+
+  it("shows a visible error and keeps the board unchanged when saving fails", async () => {
+    render(<KanbanBoard />);
+    await signIn();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify({ detail: "Database unavailable." }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+    );
+
+    const column = getFirstColumn();
+    await userEvent.click(
+      within(column).getByRole("button", { name: /add a card/i })
+    );
+    await userEvent.type(
+      within(column).getByPlaceholderText("Card title"),
+      "Unsaved card"
+    );
+    await userEvent.click(within(column).getByRole("button", { name: /add card/i }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Board changes could not be saved: Database unavailable."
+    );
+    expect(within(column).queryByText("Unsaved card")).not.toBeInTheDocument();
   });
 
   it("rejects invalid credentials and returns to sign-in after logout", async () => {

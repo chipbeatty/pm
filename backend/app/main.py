@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.board import BoardData
@@ -11,6 +12,15 @@ from app.repository import get_board, replace_board
 
 def create_app(database_path: Path | None = None) -> FastAPI:
     app = FastAPI(title="Project Management API")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+        ],
+        allow_methods=["GET", "PUT"],
+        allow_headers=["Content-Type"],
+    )
     resolved_database_path = database_path or Path(
         os.environ.get(
             "KANBAN_DB_PATH",

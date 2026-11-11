@@ -1,4 +1,15 @@
 import { expect, test } from "@playwright/test";
+import { initialData, type BoardData } from "../src/lib/kanban";
+
+test.beforeEach(async ({ page }) => {
+  let board: BoardData = structuredClone(initialData);
+  await page.route("**/api/users/user-1/board", async (route) => {
+    if (route.request().method() === "PUT") {
+      board = route.request().postDataJSON() as BoardData;
+    }
+    await route.fulfill({ json: board });
+  });
+});
 
 const signIn = async (page: import("@playwright/test").Page) => {
   await page.getByLabel("Username").fill("user");
@@ -34,6 +45,27 @@ test("adds a card to a column", async ({ page }) => {
   await firstColumn.getByPlaceholder("Details").fill("Added via e2e.");
   await firstColumn.getByRole("button", { name: /add card/i }).click();
   await expect(firstColumn.getByText("Playwright card")).toBeVisible();
+  await page.reload();
+  await signIn(page);
+  await expect(
+    page.getByText("Playwright card", { exact: true })
+  ).toBeVisible();
+});
+
+test("edits a card and persists its new details", async ({ page }) => {
+  await page.goto("/");
+  await signIn(page);
+  const card = page.getByTestId("card-card-1");
+  await card.getByRole("button", { name: "Edit Align roadmap themes" }).click();
+  await card.getByLabel("Title for Align roadmap themes").fill("Updated roadmap");
+  await card
+    .getByLabel("Details for Align roadmap themes")
+    .fill("Updated project details.");
+  await card.getByRole("button", { name: "Save" }).click();
+  await expect(card.getByText("Updated roadmap")).toBeVisible();
+  await page.reload();
+  await signIn(page);
+  await expect(page.getByTestId("card-card-1").getByText("Updated roadmap")).toBeVisible();
 });
 
 test("moves a card between columns", async ({ page }) => {
@@ -59,6 +91,11 @@ test("moves a card between columns", async ({ page }) => {
   );
   await page.mouse.up();
   await expect(targetColumn.getByTestId("card-card-1")).toBeVisible();
+  await page.reload();
+  await signIn(page);
+  await expect(
+    page.getByTestId("column-col-review").getByTestId("card-card-1")
+  ).toBeVisible();
 });
 
 test("rejects invalid credentials and clears sign-in on logout and refresh", async ({
