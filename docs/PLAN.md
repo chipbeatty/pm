@@ -49,10 +49,10 @@
 
 ## Part 4: Demo sign-in
 
-- [ ] Add a login screen that accepts only the MVP credentials `user` and `password`.
-- [ ] Gate the board behind client-side sign-in state.
-- [ ] Add a sign-out action that returns to the login screen.
-- [ ] Keep the behavior explicitly demo-only: reloading clears sign-in state; do not imply that this authenticates API requests.
+- [x] Add a login screen that accepts only the MVP credentials `user` and `password`.
+- [x] Gate the board behind client-side sign-in state.
+- [x] Add a sign-out action that returns to the login screen.
+- [x] Keep the behavior explicitly demo-only: reloading clears sign-in state; do not imply that this authenticates API requests.
 
 **Tests:** Unit tests for valid and invalid credentials and sign-out; Playwright tests for login, board gating, logout, and sign-in reset after refresh.
 

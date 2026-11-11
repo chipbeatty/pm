@@ -4,14 +4,25 @@ import { KanbanBoard } from "@/components/KanbanBoard";
 
 const getFirstColumn = () => screen.getAllByTestId(/column-/i)[0];
 
+const signIn = async () => {
+  await userEvent.type(screen.getByLabelText("Username"), "user");
+  await userEvent.type(screen.getByLabelText("Password"), "password");
+  await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
+};
+
 describe("KanbanBoard", () => {
-  it("renders five columns", () => {
+  it("requires sign-in and renders five columns after valid credentials", async () => {
     render(<KanbanBoard />);
+    expect(screen.queryByTestId(/column-/i)).not.toBeInTheDocument();
+
+    await signIn();
+
     expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
   });
 
   it("renames a column", async () => {
     render(<KanbanBoard />);
+    await signIn();
     const column = getFirstColumn();
     const input = within(column).getByLabelText("Column title");
     await userEvent.clear(input);
@@ -21,6 +32,7 @@ describe("KanbanBoard", () => {
 
   it("adds and removes a card", async () => {
     render(<KanbanBoard />);
+    await signIn();
     const column = getFirstColumn();
     const addButton = within(column).getByRole("button", {
       name: /add a card/i,
@@ -42,5 +54,25 @@ describe("KanbanBoard", () => {
     await userEvent.click(deleteButton);
 
     expect(within(column).queryByText("New card")).not.toBeInTheDocument();
+  });
+
+  it("rejects invalid credentials and returns to sign-in after logout", async () => {
+    render(<KanbanBoard />);
+    await userEvent.type(screen.getByLabelText("Username"), "user");
+    await userEvent.type(screen.getByLabelText("Password"), "wrong");
+    await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Incorrect username or password."
+    );
+    expect(screen.queryByTestId(/column-/i)).not.toBeInTheDocument();
+
+    await userEvent.clear(screen.getByLabelText("Password"));
+    await userEvent.type(screen.getByLabelText("Password"), "password");
+    await userEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
+
+    expect(screen.getByRole("heading", { name: "Kanban Studio" })).toBeVisible();
+    expect(screen.queryByTestId(/column-/i)).not.toBeInTheDocument();
   });
 });
