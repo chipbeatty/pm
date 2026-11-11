@@ -168,9 +168,9 @@ cython_debug/
 
 # Ruff stuff:
 .ruff_cache/
+backend/data/
 
 # PyPI configuration file
 .pypirc
 
 .DS_Store
-

@@ -60,10 +60,10 @@
 
 ## Part 5: Database model proposal
 
-- [ ] Define a JSON schema describing users, each user's single board, the fixed board columns, and cards.
-- [ ] Document SQLite table structure, keys, relationships, and how fixed columns and renamed titles are represented.
-- [ ] Document database initialization and persistence expectations for local Docker use.
-- [ ] Review the proposal with the user and obtain sign-off before implementing database access.
+- [x] Define a JSON schema describing users, each user's single board, the fixed board columns, and cards in `docs/board.schema.json`.
+- [x] Document SQLite table structure, keys, relationships, and how fixed columns and renamed titles are represented in `docs/DATABASE.md`.
+- [x] Document database initialization and persistence expectations for local Docker use.
+- [x] Review the proposal with the user and obtain sign-off before implementing database access.
 
 **Tests:** Validate the JSON schema and any example data against it; review that the proposed relationships enforce one board per user and preserve card ordering and column membership.
 
@@ -71,10 +71,10 @@
 
 ## Part 6: Persistent backend board API
 
-- [ ] Initialize the SQLite database and create its schema when absent.
-- [ ] Add API operations to read and update the signed-in demo user's board, including column renames and card create, edit, delete, and movement.
-- [ ] Validate request data and return clear HTTP errors for invalid or missing resources.
-- [ ] Keep database access and API behavior covered by focused backend tests.
+- [x] Initialize the SQLite database and create its schema when absent.
+- [x] Add API operations to read and update the selected user's board, including column renames and card create, edit, delete, and movement.
+- [x] Validate request data and return clear HTTP errors for invalid or missing resources.
+- [x] Keep database access and API behavior covered by focused backend tests.
 
 **Tests:** Backend tests for first-run database creation, board reads and updates, each supported card/column operation, invalid input, and persistence across application restarts.
 

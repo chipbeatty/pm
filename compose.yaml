@@ -3,6 +3,10 @@ services:
     build: .
     ports:
       - "${PORT:-8000}:8000"
+    environment:
+      KANBAN_DB_PATH: /data/kanban.sqlite3
+    volumes:
+      - kanban-data:/data
     healthcheck:
       test:
         - CMD
@@ -13,3 +17,6 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+
+volumes:
+  kanban-data:

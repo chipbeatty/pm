@@ -23,6 +23,7 @@ COPY backend/app ./app
 COPY --from=frontend-builder /app/frontend/out ./static
 
 ENV PATH="/app/backend/.venv/bin:$PATH" \
+    KANBAN_DB_PATH=/data/kanban.sqlite3 \
     PYTHONUNBUFFERED=1
 
 EXPOSE 8000
