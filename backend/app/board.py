@@ -2,6 +2,14 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+
+class _DictLikeMixin:
+    def __getitem__(self, key: str):
+        return getattr(self, key)
+
+    def __setitem__(self, key: str, value):
+        setattr(self, key, value)
+
 ColumnId = Literal[
     "col-backlog",
     "col-discovery",
@@ -19,7 +27,7 @@ COLUMN_IDS: tuple[ColumnId, ...] = (
 )
 
 
-class BoardCard(BaseModel):
+class BoardCard(_DictLikeMixin, BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(pattern=r"^card-[A-Za-z0-9_-]+$")
@@ -27,7 +35,7 @@ class BoardCard(BaseModel):
     details: str
 
 
-class BoardColumn(BaseModel):
+class BoardColumn(_DictLikeMixin, BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: ColumnId
@@ -35,7 +43,7 @@ class BoardColumn(BaseModel):
     cardIds: list[str] = Field(default_factory=list)
 
 
-class BoardData(BaseModel):
+class BoardData(_DictLikeMixin, BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str = Field(min_length=1)
