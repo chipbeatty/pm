@@ -5,10 +5,11 @@
 - `src/app/` contains the Next.js App Router entry page, layout, global styles, and metadata.
 - `src/components/` contains the Kanban board, columns, cards, and card-creation form.
 - `src/lib/kanban.ts` defines the board/card/column types, initial demo data, card movement, and ID creation.
+- `src/lib/api.ts` loads and saves a user's board through the FastAPI board API.
 - `src/test/` contains Vitest setup.
 - `tests/` contains Playwright browser tests.
 
-The current app is a client-side Kanban demo. `KanbanBoard` owns in-memory board state; the current UI supports renaming columns, moving cards with `@dnd-kit`, and adding or removing cards. Keep board operations in sync with `src/lib/kanban.ts` and cover behavior with tests. The project plan includes card editing and backend persistence as later work; do not assume those are already implemented.
+`KanbanBoard` loads the persisted board after the client-side demo sign-in and saves manual board changes through `src/lib/api.ts`. The UI supports renaming fixed columns, creating, editing, and deleting cards, and moving cards with `@dnd-kit`. The sign-in gate is not backend authentication. Keep board operations in sync with the API's complete-board representation and cover behavior with tests.
 
 ## Commands
 

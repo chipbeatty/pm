@@ -33,6 +33,8 @@
 
 **Tests:** Backend unit test for the example API; build the Docker image; start the container and verify the page and API respond; check script syntax or invocation for each supported platform where runners are available.
 
+**Implementation decisions:** Use Docker Compose for the single app container. The start scripts build and wait for container health; the stop scripts stop the Compose app. The local port defaults to `8000` and can be overridden with `PORT`.
+
 **Success criteria:** A new developer can start the local container using the platform script, load `/`, call the example API, and stop the container. No API key is required for this part.
 
 ## Part 3: Serve the existing frontend
@@ -45,6 +47,8 @@
 
 **Tests:** Frontend lint, unit tests, and Playwright tests; Docker build; container smoke test for `/`, static assets, and the example API route.
 
+**Implementation decisions:** Build Next.js with static export in a Docker build stage and serve the generated files through FastAPI `StaticFiles`; the production image does not run a separate Next.js server. Disable Next image optimization to keep images compatible with static export.
+
 **Success criteria:** The container serves the existing interactive Kanban at `/`; the frontend and API are available from the same origin; the production image does not need a separate Next.js server.
 
 ## Part 4: Demo sign-in
@@ -55,6 +59,8 @@
 - [x] Keep the behavior explicitly demo-only: reloading clears sign-in state; do not imply that this authenticates API requests.
 
 **Tests:** Unit tests for valid and invalid credentials and sign-out; Playwright tests for login, board gating, logout, and sign-in reset after refresh.
+
+**Implementation decisions:** Keep sign-in state in client memory only. The hardcoded demo credentials gate the UI and do not authenticate backend API requests.
 
 **Success criteria:** The board is not shown before a successful login; the stated demo credentials work; invalid credentials do not unlock the board; sign-out and refresh return to the login screen.
 
@@ -67,6 +73,8 @@
 
 **Tests:** Validate the JSON schema and any example data against it; review that the proposed relationships enforce one board per user and preserve card ordering and column membership.
 
+**Implementation decisions:** Use four normalized SQLite tables (`users`, `boards`, `board_columns`, and `cards`), with one board per user, five fixed column IDs, and ordered cards. The API uses the frontend's ordered-columns and card-map JSON representation. See [DATABASE.md](./DATABASE.md) for the approved schema and API representation.
+
 **Success criteria:** The schema and database approach are documented under `docs/`, account for all current board operations, and are approved before Part 6.
 
 ## Part 6: Persistent backend board API
@@ -78,6 +86,8 @@
 
 **Tests:** Backend tests for first-run database creation, board reads and updates, each supported card/column operation, invalid input, and persistence across application restarts.
 
+**Implementation decisions:** Create the schema and seed the demo board only when initializing a new board; use SQLite foreign-key constraints. A complete-board `PUT` is validated before persistence and replaces the board atomically in a transaction. Store the container database at `/data/kanban.sqlite3` on a named Compose volume.
+
 **Success criteria:** A newly started app has an initialized database and a usable board for the demo user; successful updates persist and are returned by subsequent reads; one user's data cannot be mistaken for another's.
 
 ## Part 7: Connect frontend to backend
@@ -88,9 +98,17 @@
 - [x] Show failures instead of silently presenting an unsaved change as successful.
 - [x] Keep the single-origin Docker deployment and static frontend constraints intact.
 
-**Tests:** Frontend unit tests for API interactions and error states; Playwright integration tests for board load and each manual update; backend regression tests.
+**Implementation decisions:**
 
-**Success criteria:** Manual board changes survive reloads; the displayed board reflects backend data; failed requests are visible and do not falsely appear saved.
+- Use `GET` and `PUT /api/users/{user_id}/board`; each save replaces the complete board, matching the backend API and database model.
+- Use the seeded demo user ID `user-1`. The client-only sign-in gate is not backend authentication.
+- In Next.js development, call the backend at `http://localhost:8000` and allow only the `localhost:3000` and `127.0.0.1:3000` origins. In the static Docker deployment, use relative same-origin API requests.
+- Serialize board saves so rapid edits are applied in order. Update the displayed board from the backend response and show save errors.
+- Commit a renamed column when its title field loses focus or Enter is pressed; trim whitespace and ignore an empty title.
+
+**Verification:** Frontend unit tests cover column rename persistence, card add/delete/edit, and visible save failures. Playwright tests use a mocked API and cover board loading, card add/edit/move persistence across reload, and sign-in behavior. The backend regression suite passed. A live browser check against the running backend verified sign-in/board loading and a column rename persisted through the API; the temporary title was restored. The browser suite does not automate every action against the live backend.
+
+**Success criteria:** The board is loaded from backend data after sign-in; manual updates are sent to the backend and reflected in the UI; persisted state is returned on reload; failed saves are visible and do not falsely appear successful.
 
 ## Part 8: OpenRouter connectivity
 
