@@ -250,7 +250,7 @@ wheels = [
 ]
 
 [[package]]
-name = "pm-backend"
+name = "pm-app"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
